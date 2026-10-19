@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the evening filing observer at 21:30 IST, Monday to Saturday
+
+[Timer]
+OnCalendar=Mon..Sat 21:30 Asia/Kolkata
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

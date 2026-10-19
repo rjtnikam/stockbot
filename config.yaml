@@ -1,0 +1,109 @@
+# ====================================================================
+# THE HUNTER: finds candidates on its own every morning
+# ====================================================================
+hunt:
+  enabled: true
+  market_cap_cr: [100, 25000]    # your small/mid-cap band (₹ crore)
+  deep_confirm_top: 20           # company pages read per day for the deep check
+  documents_top: 8               # finalists whose filing PDFs + concall transcripts get read (Gemini)
+  thesis_top: 2                  # hunt finalists that get a full Claude thesis per day
+  min_score_deep_check: 1.0      # below this, a company isn't worth a page load
+  min_score_finalist: 2.5        # below this, no documents / thesis
+  half_life_days: 45             # filing signals lose half their weight every 45 days
+  max_pages_per_query: 4         # Screener result pages per query (~25 companies each)
+  api_delay_seconds: [1.0, 2.5]  # pause between exchange API calls
+
+  filings:
+    source: screener             # screener (your login, recommended) or bse
+    screener_feed: important     # important = Screener's non-routine filings; all = every filing
+    max_lookback_days: 4         # covers weekends / missed runs
+    llm_classify: true           # Gemini second opinion on filing tags (cheap)
+    first_concall_max_mcap_cr: 5000
+    usd_inr: 88                  # for converting USD order values
+
+  # ---- The numbers net: Screener query language, run across the whole market.
+  # The market-cap band above is appended automatically. Edit freely; check with
+  #   python run_daily.py --calibrate-hunt
+  numbers_queries:
+    - name: revenue_jump
+      weight: 2.0
+      query: "YOY Quarterly sales growth > 30 AND Sales latest quarter > Sales preceding quarter"
+    - name: eps_acceleration
+      weight: 2.0
+      query: "EPS latest quarter > 1.3 * EPS preceding year quarter AND EPS latest quarter > EPS preceding quarter AND EPS preceding year quarter > 0"
+    - name: margin_expansion
+      weight: 2.0
+      query: "OPM latest quarter > OPM preceding year quarter + 3 AND OPM latest quarter > OPM preceding quarter AND YOY Quarterly sales growth > 10"
+    - name: profit_inflection
+      weight: 1.5
+      query: "YOY Quarterly profit growth > 50 AND Net profit latest quarter > Net profit preceding quarter AND Net profit preceding year quarter > 0"
+    - name: turnaround
+      weight: 1.5
+      query: "Net profit latest quarter > 0 AND Net profit preceding year quarter < 0 AND YOY Quarterly sales growth > 15"
+    - name: capex_ahead_of_demand
+      weight: 2.0
+      query: "Capital work in progress > 0.3 * Net block AND Debt to equity < 1"
+    - name: gross_block_expansion
+      weight: 1.5
+      query: "Gross block > 1.3 * Gross block preceding year AND Debt to equity < 1"
+    - name: promoter_buying
+      weight: 1.5
+      query: "Change in promoter holding > 1 AND Pledged percentage < 5"
+
+  # Bonus points for combinations that tell a story (see hunt/scoring.py)
+  setup_bonus:
+    capex_conversion: 3.0      # capacity built + commissioning / revenue jump
+    capex_digestion: 1.0       # capacity built, revenue not there yet (Hidden)
+    earnings_inflection: 2.0   # 2+ of: revenue jump, EPS acceleration, margin expansion, profit inflection
+    coming_out: 2.0            # first-ever concall + numbers moving
+    skin_in_game: 1.5          # promoter buying / promoter warrants at or above market
+    material_order: 2.0        # an order >= 25% of annual revenue
+    new_vector: 1.0            # new product / geography + numbers moving
+    turnaround: 1.0
+
+  # Override any filing signal weight from hunt/tags.py, e.g.
+  # tag_weights: {first_concall: 3.0, order_win: 0.5}
+  tag_weights: {}
+
+# ====================================================================
+# OTHER CANDIDATE SOURCES (optional, added after the hunt)
+# ====================================================================
+screener:
+  # Your own saved Screener screens (query stacks), in addition to the hunt.
+  screens:
+    # - https://www.screener.in/screens/123456/earnings-inflection/
+  max_pages_per_screen: 3
+
+marketsmith:
+  # MarketSmith India pages that show a stock list (e.g. your Blue Dot / idea lists).
+  # First run `python run_daily.py --calibrate-marketsmith` once to verify extraction.
+  lists:
+    # - https://marketsmithindia.com/mstool/list/...
+  # A page that only loads when you're logged in; used to detect an expired session.
+  logged_in_check_url: https://marketsmithindia.com/mstool/landing.jsp
+  login_url_fragment: login
+
+watchlist_file: watchlist.txt   # red-flag alerts always; re-analysed on new filings or every 14 days
+
+# ---------- LIMITS (cost + account safety) ----------
+limits:
+  max_stocks_per_run: 3          # full theses per day (LLM cost guard)
+  reanalyse_after_days: 14       # skip a stock analysed recently
+  page_delay_seconds: [3, 7]     # random pause between page loads (behave like a human)
+
+# ---------- MARKET ----------
+market:
+  benchmark: "^CRSLDX"           # Nifty 500 on Yahoo; falls back to ^NSEI
+  price_history_years: 6
+
+# ---------- VALUATION ASSUMPTIONS (reverse DCF) ----------
+valuation:
+  cost_of_equity: 0.13
+  terminal_growth: 0.05
+  explicit_years: 10
+  tax_rate: 0.25
+
+# ---------- RESEARCH ----------
+research:
+  lookback_days: 90
+  valuepickr_max_posts: 60

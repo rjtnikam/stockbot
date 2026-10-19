@@ -1,0 +1,24 @@
+# secrets: never commit
+.env
+.env.*
+!.env.example
+session.json
+*.pem
+*.key
+# local data, logs and environments
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+data/
+logs/
+reports/
+backtests/
+*.log
+*.db
+*.sqlite*
+journal.csv
+signals.csv
+state.json
+.run.lock
+.claude/

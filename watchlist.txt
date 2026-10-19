@@ -1,0 +1,4 @@
+# One symbol per line. Lines starting with # are ignored.
+# NSE stocks: the NSE symbol (e.g. APARINDS). BSE-only stocks: the BSE code (e.g. 539730).
+# Start with a stock you already know cold, to calibrate the bot against your own work.
+539730

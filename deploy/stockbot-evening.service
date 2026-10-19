@@ -1,0 +1,12 @@
+[Unit]
+Description=Stock bot evening filing observer (today's important exchange filings)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=__USER__
+WorkingDirectory=__APP_DIR__
+ExecStart=__APP_DIR__/.venv/bin/python run_daily.py --evening
+TimeoutStartSec=1h
+Nice=5
